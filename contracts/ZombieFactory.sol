@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-    // function _createZombie(string memory _name, uint _dna) private {
-    //     zombies.push(Zombie(_name, _dna));
-    //     uint id = zombies.length - 1;
-    //     emit NewZombie(id, _name, _dna);
-    // }
+import "./Ownable.sol";
 
-
-contract ZombieFactory {
+contract ZombieFactory is Ownable {
 
     event NewZombie(uint zombieId, string name, uint dna);
 
     uint dnaDigits = 16;
     uint dnaModulus = 10 ** dnaDigits;
+    uint cooldownTime = 1 days;
 
     struct Zombie {
         string name;
         uint dna;
+        uint32 level;
+        uint readyTime;
+        uint16 winCount;
+        uint16 lossCount;
     }
 
     Zombie[] public zombies;
@@ -26,7 +26,7 @@ contract ZombieFactory {
     mapping (address => uint) ownerZombieCount;
 
     function _createZombie(string memory _name, uint _dna) internal {
-        zombies.push(Zombie(_name, _dna));
+        zombies.push(Zombie(_name, _dna, 1, uint32(block.timestamp + cooldownTime), 0, 0));
         uint id = zombies.length - 1;
         zombieToOwner[id] = msg.sender;
         ownerZombieCount[msg.sender]++;
@@ -38,7 +38,7 @@ contract ZombieFactory {
         return rand % dnaModulus;
     }
 
-    function createRandomZombie(string memory _name) public {
+    function createRandomZombie(string memory _name) internal {
         require(ownerZombieCount[msg.sender] == 0);
         uint randDna = _generateRandomDna(_name);
         randDna = randDna - randDna % 100;
